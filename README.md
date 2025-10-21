@@ -1,50 +1,89 @@
-# Welcome to your Expo app 👋
+# React Native Polar H10 ECG Example
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A demo project showcasing how to stream real-time ECG data from a Polar H10 sensor to a React Native (Expo) application using a custom native module.
 
-## Get started
+This project uses a local Expo Module (`modules/polar-ecg-module`) to bridge the official [polarofficial/polar-ble-sdk](https://github.com/polarofficial/polar-ble-sdk) (v5.4.0) with a React Native frontend.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Features
 
-2. Start the app
+* **React Native (Expo) Example:** A simple app to connect, start, and display live ECG data.
+* **Custom Native Module:** All native bridging logic is encapsulated in `modules/polar-ecg-module`, built using the modern Expo Modules API.
+* **Official Polar SDK:** Uses the official SDK for robust communication, including requesting stream settings and handling data streams.
+* **Cross-Platform:** The native module includes implementations for both **Android (Kotlin)** and **iOS (Swift)**.
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## Project Structure
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+.
+├── app/                  \# Main Expo app source code
+├── modules/
+│   └── polar-ecg-module/ \# The custom native module
+│       ├── android/      \# Android (Kotlin) native bridge
+│       ├── ios/          \# iOS (Swift) native bridge
+│       └── src/          \# TypeScript interface for the module
+├── package.json
+└── README.md
 
-## Learn more
+````
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Getting Started
 
-## Join the community
+### Prerequisites
 
-Join our community of developers creating universal apps.
+1.  A physical Android or iOS device.
+2.  A Polar H10 sensor.
+3.  Node.js and dependencies for React Native development (see React Native docs).
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**Note:** This project uses custom native code and **cannot** be run in the Expo Go app. You must create a development build.
+
+### Installation & Usage
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/votranphi/native-module-polar-h10
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Set Your Device ID:**
+    Open `app/index.tsx` (or your main app file) and update the `POLAR_DEVICE_ID` constant with your sensor's unique ID. You can find this ID printed on the sensor or by using a BLE scanner app.
+
+4.  **Run the development build:**
+
+    **For Android:**
+    ```bash
+    npx expo prebuild --clean
+    npx expo run:android
+    ```
+
+    **For iOS:**
+    ```bash
+    npx expo run:ios
+    ```
+
+---
+
+## How It Works
+
+The `polar-ecg-module` is responsible for all native Bluetooth communication.
+
+1.  **Request Settings:** The module first calls `api.requestStreamSettings` on the native side to query the Polar H10 for its available ECG sensor settings (like sample rate and resolution).
+2.  **Select Setting:** It selects the desired `PolarSensorSetting` from the list returned by the device.
+3.  **Start Stream:** The module calls `api.startEcgStreaming`, passing in the selected settings object.
+4.  **Data Events:** The native module subscribes to the resulting data stream (using RxJava on Android and RxSwift on iOS) and emits events to the React Native (JavaScript) layer using the `sendEvent` function. The React app listens for these events to update the UI.
+
+---
+
+## License
+
+This project is available under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) license.
