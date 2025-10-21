@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["PolarEcgModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.polarecgmodule.PolarEcgModule"]
+  }
+}
