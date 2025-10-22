@@ -91,44 +91,46 @@ class PolarEcgModule : Module() {
         val isDisposed = ecgDisposable?.isDisposed ?: true
         
         if (isDisposed) {
-          // Request stream settings từ device, sau đó start streaming với max settings
-          ecgDisposable = api?.requestStreamSettings(deviceId, PolarBleApi.PolarDeviceDataType.ECG)
-            ?.toFlowable()
-            ?.flatMap { sensorSetting -> 
-              Log.d(TAG, "Received sensor settings, starting ECG stream")
-              // Explicitly handle nullable return
-              val streamFlowable = api?.startEcgStreaming(deviceId, sensorSetting.maxSettings())
-              streamFlowable ?: io.reactivex.rxjava3.core.Flowable.error(Exception("Failed to start ECG streaming"))
-            }
-            ?.observeOn(AndroidSchedulers.mainThread())
-            ?.subscribe(
-              { polarEcgData ->
-                Log.d(TAG, "ECG data received: ${polarEcgData.samples.size} samples")
-                
-                val samples = polarEcgData.samples.map { sample ->
-                  mapOf(
-                    "voltage" to sample.voltage,
-                    "timeStamp" to sample.timeStamp
-                  )
-                }
-                
-                sendEvent("onEcgData", mapOf(
-                  "timeStamp" to polarEcgData.timeStamp,
-                  "samples" to samples
-                ))
-              },
-              { error ->
-                Log.e(TAG, "ECG stream failed: ${error.message}")
-                ecgDisposable = null
-                sendEvent("onError", mapOf("message" to "ECG stream failed: ${error.message}"))
-              },
-              {
-                Log.d(TAG, "ECG stream complete")
-                ecgDisposable = null
+          val polarApi = api
+          if (polarApi != null) {
+            ecgDisposable = polarApi.requestStreamSettings(deviceId, PolarBleApi.PolarDeviceDataType.ECG)
+              .toFlowable()
+              .flatMap { sensorSetting: PolarSensorSetting -> 
+                Log.d(TAG, "Received sensor settings, starting ECG stream")
+                polarApi.startEcgStreaming(deviceId, sensorSetting.maxSettings())
               }
-            )
-          
-          "ECG streaming started for $deviceId"
+              .observeOn(AndroidSchedulers.mainThread())
+              .subscribe(
+                { polarEcgData: PolarEcgData ->
+                  Log.d(TAG, "ECG data received: ${polarEcgData.samples.size} samples")
+                  
+                  val samples = polarEcgData.samples.map { sample ->
+                    mapOf(
+                      "voltage" to sample.voltage,
+                      "timeStamp" to sample.timeStamp
+                    )
+                  }
+                  
+                  sendEvent("onEcgData", mapOf(
+                    "timeStamp" to polarEcgData.timeStamp,
+                    "samples" to samples
+                  ))
+                },
+                { error: Throwable ->
+                  Log.e(TAG, "ECG stream failed: ${error.message}")
+                  ecgDisposable = null
+                  sendEvent("onError", mapOf("message" to "ECG stream failed: ${error.message}"))
+                },
+                {
+                  Log.d(TAG, "ECG stream complete")
+                  ecgDisposable = null
+                }
+              )
+            
+            "ECG streaming started for $deviceId"
+          } else {
+            throw Exception("Polar API not initialized")
+          }
         } else {
           "ECG streaming already running"
         }
